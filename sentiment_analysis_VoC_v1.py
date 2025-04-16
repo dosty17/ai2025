@@ -7,9 +7,8 @@ import matplotlib.pyplot as plt
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-# Download VADER lexicon
+# Download the VADER lexicon if not already present
 nltk.download('vader_lexicon')
-
 analyzer = SentimentIntensityAnalyzer()
 
 st.set_page_config(
@@ -42,9 +41,8 @@ if filename is not None:
 
     brand_c = data.groupby(['brand']).size().reset_index()
     st.sidebar.write("Reviews count by brand:")
-    st.sidebar.write("Nokia   : " + str(brand_c[0][1]))
-    st.sidebar.write("HUAWEI  : " + str(brand_c[0][0]))
-    st.sidebar.write("Samsung : " + str(brand_c[0][2]))
+    for i, row in brand_c.iterrows():
+        st.sidebar.write(f"{row['brand']} : {row[0]}")
 
     st.subheader("Phone Reviews Sentiment distribution")
     col3, col4 = st.columns(2)
@@ -64,7 +62,7 @@ if filename is not None:
         trend_dt1 = trend_dt1.sort_values(['sentiment'], ascending=False)
         trend_dt1.rename(columns={0: 'Sentiment_Count'}, inplace=True)
 
-        fig2 = px.line(trend_dt1, x="Review_Month", y=0, color='sentiment', width=600, height=400)
+        fig2 = px.line(trend_dt1, x="Review_Month", y="Sentiment_Count", color='sentiment', width=600, height=400)
         fig2.update_layout(title_text='Trend analysis of sentiments for Nokia', title_x=0.5)
         st.plotly_chart(fig2, use_container_width=True)
 
@@ -92,10 +90,9 @@ if filename is not None:
                'amazon', 'need', 'still', 'work', 'phone', 'huawei', 'samsung', 'nokia', 'windows phone', 'great',
                'good', 'use', 'love', 'one', 'amazing', 'still used', 'lumia', 'iphone']
     data['body1'] = data['body'].apply(lambda x: ' '.join([word for word in str(x).split() if word.lower() not in word_ls]))
-    data['body1'] = data['body1'].str.replace('phone', ' ')
+    data['body1'] = data['body1'].str.replace('phone', ' ', regex=False)
 
     brands = ['Nokia', 'HUAWEI', 'Samsung']
-    sentiments = ['Positive', 'Negative']
     col_pairs = [st.columns(2), st.columns(2), st.columns(2)]
 
     for i, brand in enumerate(brands):
@@ -121,15 +118,14 @@ if filename is not None:
 
     st.markdown("------------------------------------------------------------------------------------")
     st.subheader("Top 5 positive reviews for Nokia:")
-    pos = data[(data['brand'] == 'Nokia') & (data['score'] > .9)].reset_index()
-    pos = pos.sort_values(['score'], ascending=False)
+    pos = data[(data['brand'] == 'Nokia') & (data['score'] > .9)].sort_values(['score'], ascending=False).reset_index()
 
-    for i in range(5):
+    for i in range(min(5, len(pos))):
         st.write(f"{i+1}. Nokia | Positive | Sentiment Score: {pos['score'].iloc[i]} - {pos['body'].iloc[i]}")
 
     st.markdown("------------------------------------------------------------------------------------")
     st.subheader("Top 5 negative reviews for Nokia:")
-    neg = data[(data['brand'] == 'Nokia') & (data['score'] < .1)].reset_index()
+    neg = data[(data['brand'] == 'Nokia') & (data['score'] < .1)].sort_values(['score']).reset_index()
 
-    for i in range(5):
-        st.markdown(f"{i+1}. Nokia | Negative | Sentiment Score: {neg['score'].iloc[i]} - {neg['body'].iloc[i]}")
+    for i in range(min(5, len(neg))):
+        st.write(f"{i+1}. Nokia | Negative | Sentiment Score: {neg['score'].iloc[i]} - {neg['body'].iloc[i]}")
